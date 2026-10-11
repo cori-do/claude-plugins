@@ -1,0 +1,20 @@
+{
+  "name": "cori",
+  "owner": {
+    "name": "Cori Inc.",
+    "url": "https://cori.do"
+  },
+  "metadata": {
+    "description": "Cori's plugins for Claude."
+  },
+  "plugins": [
+    {
+      "name": "cori",
+      "source": "./plugins/cori",
+      "description": "Cori Cloud's MCP server, the skill to build Cori apps, and /cori:start, which takes a first app to its preview URL.",
+      "category": "development",
+      "homepage": "https://cori.do",
+      "license": "MIT"
+    }
+  ]
+}

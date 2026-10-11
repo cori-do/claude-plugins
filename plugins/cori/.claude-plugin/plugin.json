@@ -1,0 +1,19 @@
+{
+  "name": "cori",
+  "version": "0.2.0",
+  "description": "Cori Cloud's MCP server, the skill to build Cori apps, and /cori:start, which takes a first app to its preview URL.",
+  "author": {
+    "name": "Cori Inc.",
+    "url": "https://cori.do"
+  },
+  "homepage": "https://cori.do",
+  "repository": "https://github.com/cori-do/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "cori",
+    "internal apps",
+    "workflows",
+    "approvals",
+    "mcp"
+  ]
+}
