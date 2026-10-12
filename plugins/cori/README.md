@@ -10,6 +10,13 @@ Cori app is written, checked and deployed.
 - **Skill `build-app`**: how to write, check, run and deploy a Cori app (workflows, stores, the front).
 - **Command `/cori:start`**: a first app, from nothing to its preview URL.
 
+## Several organizations
+
+Claude works in the organization you signed in to (the browser asks which one when you belong to several). To work in
+two from Claude Code, add the server a second time under another name, and sign that one in to the other organization:
+`claude mcp add --transport http cori-<organization> https://app.cori.do/mcp`. An app folder belongs to the
+organization it was made in: the `cori` command line uses your login to that one there (`cori login --org <slug>`).
+
 ## What it runs, sends and fetches
 
 - The plugin itself runs nothing: it is text and one server address. It has no hooks and no programs.
