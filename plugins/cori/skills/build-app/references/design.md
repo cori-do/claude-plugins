@@ -7,6 +7,9 @@
 - Called from another workflow → no trigger needed; the parent uses `step.workflow`.
 - `allow.roles`: the app roles that may start it. The caller's roles are what stores and `auth = principal`
   connectors see; a step a role may not perform fails at run time and shows in `cori run --user`.
+- Rank the app's roles before writing them down: `[auth] roles` lists them **strongest first**, because a person
+  holding several acts in the stores as the first listed. Make each role able to do everything the roles after it may
+  (a manager also files what an employee files), so a person never loses an ability by holding one more role.
 
 ## 2. Parameters
 Only what the caller knows at click time. Everything else is looked up in a step. Optional inputs get `required:

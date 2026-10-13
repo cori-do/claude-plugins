@@ -90,6 +90,29 @@ tables:
     creatable: { owner: {}, project_id: { required: true }, hours: { required: true }, day: { required: true } }
 ```
 
+List the tenant column in a `scope: all` role's `readable` when it needs to know whose row it is (a report per
+person): such a role reads it only then. A role scoped to its own rows may always use it in a `query` (it holds the
+caller's own id), listed or not.
+
+### A person with several roles: list roles strongest first
+
+A person may hold several of the app's roles (a manager who also logs their own time as an employee; the app's owner
+holds them all). In a store they act as **one** role: the first of them that cori.toml's `[auth] roles` lists,
+whatever order their token gives (an identity provider often sorts them alphabetically: `employee` before `manager`).
+So **list the app's roles strongest first**:
+
+```toml
+[auth]
+roles = { manager = "group:managers", employee = "group:employees" }   # manager and employee: acts as manager
+```
+
+and make the first role cover what the ones after it may do: a manager who logs their own time needs the employee's
+readable, creatable and updatable columns in `roles/manager.yaml` too (on top of `scope: all`). Roles that cannot be
+ranked (each may do something the other may not) leave a person holding both without one of them: merge their powers
+into the stronger one, or give people one of the two. `cori check` warns when a role listed later may do everything an
+earlier one may, and more: swap them. Endpoints (`allow.roles`) and the front check every role a person holds; only
+the stores pick one.
+
 A child table can take its owner from its parent instead of a column of its own:
 `tenant: { via: ticket_id, references: tickets }` (the parent has `tenant: <column>`; one level deep).
 
@@ -183,6 +206,13 @@ export default step.store({
 // no parameters: the static form `query: { text: "select …", params: [] }` is enough. A static `params` array is
 // never bound from the input; `params: ["$1"]` or `params: ["status"]` sends those strings to the database.
 ```
+A query only reads: the store runs one SELECT in a read-only transaction and refuses anything else, so a query step is
+always a Read in the change review. Change rows with the store's tools (`create…`, `update…`, `delete…`), never with an
+UPDATE in a query: `cori check` refuses a query text that is not one SELECT, and when the text is built by a function
+the store refuses it as the step runs. Write the text out where you can: `cori check` then checks its tables and columns.
+Free SQL calls aggregates, window functions and string, number, date and JSON functions, including the set-returning
+`generate_series` and `unnest` in FROM (a calendar to join on). The caller is a parameter (`params: [ctx.user.sub]`,
+then `$1`): `current_user` is the store's database login, not the person, and is refused.
 Tool names come from the folder, no server needed: `cori store tools <store> [--role <r>]` prints each role's tools
 (name, Read/Write, parameters with `*` = required) from the migrations and `roles/*.yaml`. `cori scaffold <store> <tool>
 --workflow <id>` writes the tool form with a typed input skeleton and rejects a name no role exposes; `cori check`

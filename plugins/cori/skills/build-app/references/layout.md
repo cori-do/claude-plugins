@@ -5,7 +5,7 @@ out of git.
 
 ```
 my-app/
-├── cori.toml                    # app id, name, front, auth roles, llm, connector overrides and dev mocks, webhooks
+├── cori.toml                    # app id, name, front, auth roles (strongest first), llm, connector overrides and dev mocks, webhooks
 ├── AGENTS.md                    # conventions and commands for the agent (written by `cori init`; editable)
 ├── README.md
 ├── .gitignore                   # .cori/  node_modules/  .DS_Store  (dist/ too when the front has a build step)
@@ -43,7 +43,7 @@ root = "dist"
 allow = { roles = ["support_agent", "support_lead", "it_admin"] }
 
 [auth]                              # users sign in with the platform's issuer; the app gets its own OIDC client from it
-roles = { support_agent = "group:support-agents", support_lead = "group:support-leads" }   # the app's roles (keys); values note the IdP group
+roles = { support_lead = "group:support-leads", support_agent = "group:support-agents" }   # the app's roles (keys), STRONGEST FIRST; values note the IdP group
 principal_claims = ["email", "department"]   # copied into ctx.user; nothing else of the token reaches a run
 
 [parallel]
@@ -106,6 +106,19 @@ format = "json"                     # json | slack
 Connector field reference (`ConnectorConfig`): `kind`, `ref`, `audience`, `worker`, `base_url`, `auth_env`,
 `secret`, `task_queue`, `url`, `command`, `dev.mock`. Only `kind` and `ref` are common to every kind; the rest belongs
 to one transport. `cori store new <name>` appends the store block for you.
+
+**The order of `[auth] roles` matters: strongest first.** A person often holds several of an app's roles (a lead who
+also works tickets, a manager who also logs time, the app's owner who holds them all). In a store such a person acts
+as **one** role, the first of theirs that `[auth] roles` lists, whatever order their token or the alphabet gives. So:
+- list the roles from the most able to the least (`support_lead` before `support_agent`, `manager` before `employee`,
+  `admin` before `member`);
+- give the first role's files (`stores/<s>/roles/<role>.yaml`) everything the roles after it may do, so holding a
+  second role never takes an ability away;
+- both forms keep their order: the inline table above, or one `[auth.roles.<role>]` section per role
+  (`description`, `note`) in the same order.
+
+`cori check` warns when a role listed later may do everything an earlier one may, and more ("List roles strongest
+first"). Endpoints (`allow.roles`), human gates and the front check every role a person holds; only the stores pick one.
 
 `[llm]` is optional on a server. Without a provider of its own, an app's `llm` steps get the org's default model for
 their tier (console, LLM), and where the org set none, the server's starter model when it offers one: free, shared,

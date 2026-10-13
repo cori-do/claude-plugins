@@ -40,6 +40,8 @@ Layout and manifest:
 | `step \`s\` calls tool \`t\`, which no role of stores/<store> exposes (tools: …)` | use a listed name (`cori store tools <store>` shows them per role), or grant the table in `stores/<store>/roles/<role>.yaml` |
 | `connector \`c\` is declared but no step uses it` (warning) | remove it from `connectors:` |
 | `cori.toml [app] description: one line …` / `at most 140 characters …` (warning) | the apps portal shows one short line under the app's name: shorten it |
+| `cori.toml [auth] roles lists \`a\` before \`b\`, but in stores/<s> \`b\` may do everything \`a\` may, and more (…): … List roles strongest first` (warning) | swap them in `[auth] roles`: strongest first, as a person holding both acts as the first listed |
+| `step \`s\`'s query is UPDATE: a store query only reads (one SELECT) …` | change rows with the store's tools (`cori store tools <store>`: create…, update…, delete…); a query only reads |
 | `\`n\` is not a declared parameter` / `\`n\` is not a step of this workflow` (in `result`) | fix the `result` path |
 | `result.fields \`p\`: \`f\` is not a field of step \`s\`'s output (fields: …)` | use a field of the step's `output` schema |
 | `result.headline \`p\`: \`f\` follows an array; templates cannot index arrays or read .length (compute it in a code step)` | add a `code` step that returns the count or the element |

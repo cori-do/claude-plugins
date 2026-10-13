@@ -57,9 +57,10 @@ loop inside such a folder.
 1. **Which app?** An existing one: `cori apps list` / `cori apps get <id>` (or the MCP `list_apps` / `get_app`), then
    `cori pull <id> ./<id>` if the folder is not on this machine. A new one: `cori apps create <id> --roles a,b` (or
    the MCP `create_app`), then `cori init <id> --app <id> [--template team-requests|support-desk]`. Without a server at
-   all (pure local work): `cori init <dir> --roles a,b --no-register`. A new app gets a React front in `front/`, and so
-   does `team-requests`; with `support-desk` add `--front react` (an existing app without `front/package.json`: init a
-   scratch app and copy its `front/`).
+   all (pure local work): `cori init <dir> --roles a,b --no-register`. Give the roles **strongest first**
+   (`--roles manager,employee`): that order goes into `cori.toml` and decides how a person holding several acts (rule
+   below). A new app gets a React front in `front/`, and so does `team-requests`; with `support-desk` add
+   `--front react` (an existing app without `front/package.json`: init a scratch app and copy its `front/`).
 2. **A session.** Every server-touching command reads `<app>/.cori/session`: the folder's server, and an agent's token.
    A human signs in once per server with `cori login <url>` (kept in `~/.cori/config.toml`; run in the folder, it also
    makes the folder work with that server); an agent gets it from the MCP `login` tool and writes `session_toml`
@@ -99,6 +100,12 @@ cori store tools <name> [--role <r>]                                           #
 - Decisions in `code`; `llm` with a fixed `output` and a `tier`; `human` gates routed to a role with `timeout` and
   `on_timeout`; one declared connector per `mcp` / `store` / `http` / `activity` / `cli` step; `workflow` runs a
   sibling workflow as a child. See [references/steps.md](references/steps.md).
+- **Roles, strongest first.** `[auth] roles` in `cori.toml` lists the app's roles from the most able to the least
+  (`roles = { manager = "group:managers", employee = "group:employees" }`), whatever their alphabetical order. A person
+  holding several (a manager who also logs time, an app's owner who holds them all) acts in every store as the first
+  of them listed, never as a mix: give that role's files in `stores/<s>/roles/` everything the roles after it may do,
+  so holding a second role never takes an ability away. Endpoints (`allow.roles`) and the front check every role a
+  person holds. `cori check` warns when a role listed later may do everything an earlier one may, and more.
 - Shared code lives in `lib/` at the app root (from `workflows/<id>/steps/*.ts`: `import … from "../../../lib/x.ts"`; from `workflows/<id>/types.ts`: `"../../lib/x.ts"`); nothing above `cori.toml` can be imported.
 - `result:` gives the run a `headline` (`{{ params.x }}`, `{{ steps.s.field }}`, dotted paths only) and `fields`.
   `redact:` lists `steps.<step>.<field>` paths that never reach stored outputs or captured LLM inputs.
@@ -152,6 +159,7 @@ deliverable; use it only when the user asks for no build step. Do not wait to be
 The config, file-by-file recipe, pitfalls and the run API are in [references/front.md](references/front.md).
 
 ## 4. What to report
-When you finish: the workflows touched and their `steps:`, the connectors and store roles they need, what `check`
+When you finish: the workflows touched and their `steps:`, the connectors and store roles they need (in their order,
+strongest first), what `check`
 proved (effects per connector), how you ran it locally and with which identity, the front's screens and which role sees each, the preview url and the change review
 summary, and the exact `cori promote` command a human should run. Never claim a version is live; only a human promotes.

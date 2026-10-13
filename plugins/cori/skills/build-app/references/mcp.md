@@ -16,7 +16,7 @@ checking, running and deploying is the cli.
 |---|---|---|
 | `list_apps` | — | apps you own or build: id, owner, promoted version, how to pull. Start here for an existing app |
 | `get_app` | `{ app }` | owner, builders, roles, promoted and last version, urls, the `cori pull <app> <dir>` command |
-| `create_app` | `{ id, name?, roles?, builders?, template?: "blank" \| "support-desk" }` | reserves the id, you become owner (`blank`, the default, is an empty app). Then `login` and `cori init <id> --app <id>` |
+| `create_app` | `{ id, name?, roles?, builders?, template?: "blank" \| "team-requests" \| "support-desk" }` | reserves the id, you become owner (`blank`, the default, is an empty app). `roles` strongest first (`["manager", "employee"]`): `cori init` writes them into cori.toml in that order. Then `login` and `cori init <id> --app <id>` |
 | `login` | `{ app, ttl_secs? }` (default 3600, max 14400) | `{ server, app, token, kind: "agent", expires_at, scopes, session_file: ".cori/session", not_allowed, session_toml, bootstrap, next }` |
 | `list_connectors` | `{ kind?: mcp \| store \| http \| activity \| cli }` | names, kinds, tools with one-line descriptions and effects |
 | `find_tool` | `{ query }` | up to 20 ranked tools with input schemas |
