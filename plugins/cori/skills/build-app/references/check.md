@@ -39,6 +39,7 @@ Layout and manifest:
 | `step uses connector \`c\` which is not listed in manifest \`connectors\`` | add it to `connectors:` (and the app's `cori.toml` if it is a store or an override) |
 | `step \`s\` calls tool \`t\`, which no role of stores/<store> exposes (tools: …)` | use a listed name (`cori store tools <store>` shows them per role), or grant the table in `stores/<store>/roles/<role>.yaml` |
 | `connector \`c\` is declared but no step uses it` (warning) | remove it from `connectors:` |
+| `cori.toml [app] description: one line …` / `at most 140 characters …` (warning) | the apps portal shows one short line under the app's name: shorten it |
 | `\`n\` is not a declared parameter` / `\`n\` is not a step of this workflow` (in `result`) | fix the `result` path |
 | `result.fields \`p\`: \`f\` is not a field of step \`s\`'s output (fields: …)` | use a field of the step's `output` schema |
 | `result.headline \`p\`: \`f\` follows an array; templates cannot index arrays or read .length (compute it in a code step)` | add a `code` step that returns the count or the element |
@@ -70,7 +71,7 @@ Registry and connectors:
 |---|---|
 | a `mcp` step's `input` fails `deno check` against `ConnectorTools` | the tool's input schema changed or the argument is wrong; `cori connectors find <tool> --json` shows the schema, `cori scaffold … --force` rewrites the step |
 | `no worker polls <task_queue>` (warning) | the activity connector's worker is not running; fine locally with the fixture, blocking in production |
-| `session expired` / 401 | human: `cori login <url>`; agent: call the MCP `login` tool again and rewrite `.cori/session` |
+| `not signed in to <url>` / `session expired` / 401 | human: `cori login <url>`; agent: call the MCP `login` tool again and rewrite `.cori/session` |
 
 ## `cori run` output
 
@@ -112,7 +113,7 @@ result: Ticket T-1042 → billing (P2)
 $ cori deploy .
 app support-desk · v3 deployed · version 3b9d12ab34cd · commit 0f1e2d3c4b5a
   sandbox  support_tickets      created · 1 migration(s) · 1 seed file(s)
-  preview  http://127.0.0.1:8080/apps/support-desk/@3b9d12ab34cd/  (its workflows run on the sandbox; nothing reaches the live stores)
+  preview  http://127.0.0.1:8080/apps/support-desk/@v3/  (its workflows run on the sandbox; nothing reaches the live stores)
   console  http://127.0.0.1:8080/#/versions/support-desk  (versions, change review, approve, promote)
   workflow support_ticket_triage      endpoint sync  schedule -
   workflow refund_request             endpoint async  schedule -
@@ -123,6 +124,8 @@ app support-desk · v3 deployed · version 3b9d12ab34cd · commit 0f1e2d3c4b5a
            without an approver role the request waits in the console inbox; an approver accepts it there, or runs `cori promote support-desk v3`
 ```
 
+On a server with a fronts domain the preview is the root of the release's own host (`https://support-desk--v3.apps.example.com/`,
+on Cori Cloud `https://support-desk--v3--<org>.cori.run/`).
 `(dirty)` after the commit means uncommitted changes went into the bundle (`--require-clean` refuses that). `--json`
 prints the server's response (`hash`, `short`, `status`, `review.delta`, `sandbox`, `preview_url`, `promote`).
 Relay the version, the preview url, every `write` line and the `next` command to the user. The agent session cannot

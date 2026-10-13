@@ -24,7 +24,7 @@ checking, running and deploying is the cli.
 | `scaffold` | `{ connector, tool, name?, app?, version? }` | the typed step file as text, for hosts without a shell (with a shell prefer `cori scaffold`, which writes it and updates `steps:`). `app` (and a `version`, default the latest) reads that app's own store connectors from the version's files |
 | `app_settings` | `{ app }` | the promoted (else latest) version's `cori.toml` settings, shown as a form (MCP App). They change in the folder: edit `cori.toml`, then `cori deploy` |
 | `store_browse` / `store_query` | `{ app, store?, table?, version?, … }` / `{ app, store, sql, version? }` | rows the caller's role may read (MCP App): the live databases once a version is promoted, else the latest version's sandbox; `version` names a sandbox; an agent session always reads a sandbox. `store_query` is the widget's own (the model does not see it) |
-| `preview` | `{ app, hash? }` | the hosted front's url (nested where the host allows), a screenshot when available, the version's workflows and review state (MCP App) |
+| `preview` | `{ app, hash? }` | the release's own url (its host, `<app>--v<n>…`, nested where the host allows), a screenshot when available, the version's workflows and review state (MCP App) |
 
 The MCP Apps widgets render in claude.ai, Claude Desktop and Cowork; Claude Code sees the JSON result.
 

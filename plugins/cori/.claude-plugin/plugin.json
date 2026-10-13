@@ -1,6 +1,6 @@
 {
   "name": "cori",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "Cori Cloud's MCP server, the skill to build Cori apps, and /cori:start, which takes a first app to its preview URL.",
   "author": {
     "name": "Cori Inc.",

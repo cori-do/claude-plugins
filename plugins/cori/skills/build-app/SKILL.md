@@ -34,7 +34,7 @@ prints the same, `--json` for a machine-readable object). The references below g
 ```bash
 npm install -g @cori-do/cli                   # macOS, Linux (Windows: WSL); `npx @cori-do/cli …` where nothing can be installed; from the repository: cargo install --path ./crates/cori-cli
 cori up                                       # everything local (needs Deno 2, the Temporal cli, Postgres): server :8080, worker, Temporal dev server, embedded Postgres for stores, dev auth, connector mocks, console at /
-cori login http://127.0.0.1:8080 --global     # a dev session for admin commands outside an app (dev:<you>:it_admin); `cori login <org url>` for a real server
+cori login http://127.0.0.1:8080             # your dev login (dev:<you>:it_admin), the default outside app folders; `cori login <org url>` for a real server
 cori doctor                                   # deno, temporal, ports, server, database, store, auth (issuer, exchanges), secrets
 claude mcp add --transport http cori http://127.0.0.1:8080/mcp   # optional: apps, sessions and connectors for the agent (references/mcp.md)
 ```
@@ -60,10 +60,11 @@ loop inside such a folder.
    all (pure local work): `cori init <dir> --roles a,b --no-register`. A new app gets a React front in `front/`, and so
    does `team-requests`; with `support-desk` add `--front react` (an existing app without `front/package.json`: init a
    scratch app and copy its `front/`).
-2. **A session.** Every server-touching command reads `<app>/.cori/session`. A human writes it with `cori login <url>`
-   in the folder; an agent gets it from the MCP `login` tool and writes `session_toml` verbatim to `.cori/session`
-   (or runs the printed `bootstrap` when the folder does not exist yet). The agent session is app-scoped and
-   short-lived: it deploys and pulls versions and reads their sandbox stores
+2. **A session.** Every server-touching command reads `<app>/.cori/session`: the folder's server, and an agent's token.
+   A human signs in once per server with `cori login <url>` (kept in `~/.cori/config.toml`; run in the folder, it also
+   makes the folder work with that server); an agent gets it from the MCP `login` tool and writes `session_toml`
+   verbatim to `.cori/session` (or runs the printed `bootstrap` when the folder does not exist yet). The agent session
+   is app-scoped and short-lived: it deploys and pulls versions and reads their sandbox stores
    (`cori store query|tools … --version <hash>`); it cannot approve or promote, nor reach live data or live runs. When
    the cli says the session expired, call `login` again.
 3. **Which connectors?** `cori connectors list` (names, kinds, tools, effects) and `cori connectors find "post a
@@ -119,9 +120,9 @@ cori deploy .                        # tar.zst → compile → change review →
   embedded Postgres when `cori up` runs (the app's own local database, migrated and seeded once), else the fixture rows.
   After editing a migration or a seed file, `cori run … --reset-store` drops that local database and rebuilds it.
   `--mock-llm` keeps `llm` steps on `fixtures/llm.json` whatever `[llm]` says.
-- `cori deploy` never changes what users see. It produces a **deployed** version with its own sandbox database per
-  store, its preview url (`/apps/<app>/@<hash>/`, where the front runs that version's workflows on the sandbox) and a
-  change review against the promoted version. Tell the user the preview url and what the review says (new writes,
+- `cori deploy` never changes what users see. It produces a **deployed** release (`v<n>`) with its own sandbox database
+  per store, its preview url (the root of its own host, `<app>--v<n>…`, or `/apps/<app>/@v<n>/` under `cori up`, where
+  the front runs that release's workflows on the sandbox) and a change review against the promoted version. Tell the user the preview url and what the review says (new writes,
   new connectors, schema drift).
 - **Promotion is a human action**: `cori promote <app> <hash>` with a human session, or the console. A version that
   adds writes, or any version of a protected app, waits for an approver (the console inbox, or the approver's own
@@ -139,10 +140,13 @@ deliverable; use it only when the user asks for no build step. Do not wait to be
   `src/views/`, reuse the kit rather than restyling from scratch.
 - `npm run build` regenerates `src/lib/cori.ts` from the workflows (`cori gen client`), type-checks and writes
   `dist/`: run it after every workflow change and before every `cori deploy` (deploy warns when `dist/` is stale).
-  Keep hash routes: the server's SPA fallback breaks path routes.
+  Keep hash routes: the server's SPA fallback breaks path routes, and `cori up` serves the front under `/apps/<app>/`.
+  The front's own paths stay out of `/v1/`, `/__cori/` and `/apps/`, which are the platform's on its host.
 - The bar: a form for every workflow a role can start, pending / success / error / empty states on every call, the
   run's `result.headline` and `fields` rendered (never raw JSON), `useUser` and `<Protected>` shaping what each role
   sees, an approvals inbox when a workflow has a `human` step, a consistent layout that works at phone width.
+- The organization's apps portal lists the app with its `[app] name`, `description` (one line) and the front's
+  `favicon.svg` (`front/public/`): give it all three.
 - Open the preview url in a browser and use it as each role before reporting.
 
 The config, file-by-file recipe, pitfalls and the run API are in [references/front.md](references/front.md).

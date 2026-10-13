@@ -208,18 +208,19 @@ connector's rules).
 ## Sessions and credentials
 
 Resolution order for every server-touching command: `--server`/`--token` flags → `CORI_SERVER`/`CORI_TOKEN` →
-`<app>/.cori/session` → `~/.cori/config.toml` (admin commands run outside an app) → a local `cori up` at
+`<app>/.cori/session` (the folder's server, and its own token when it has one) → your logins in `~/.cori/config.toml`
+(one per server; the one you made last is the server of commands run outside an app folder) → a local `cori up` at
 `http://127.0.0.1:8080` with your dev identity `dev:<you>:it_admin` (never used by promote, approve, rollback, protect
-or deletions). Inside an app folder the session file is the single source of both the server and the identity. A
-stored token (the session file, `~/.cori/config.toml`) only goes to the server it was issued for: `--server` naming
-another server gets none of them, and the dev identity only goes to a server on this machine.
+or deletions). Inside an app folder the server is the session file's, whichever login is your default. A stored token
+(a folder's own, your logins) only goes to the server it was issued for: `--server` naming another server gets your
+login to that one or nothing, and the dev identity only goes to a server on this machine.
 
 ```toml
 # .cori/session (TOML, 0600) — written by `cori login`, `cori init`, `cori pull`, or from the MCP `login` tool
 server     = "https://cori.acme"
 app        = "my-app"
 kind       = "agent"                  # agent | human
-token      = "eyJ…"
+token      = "eyJ…"                   # "" in a folder that uses your login to `server`
 expires_at = "2026-09-16T11:04:00Z"
 scopes     = ["registry:read", "versions:publish", "runs:preview", "stores:read"]
 ```
@@ -228,8 +229,10 @@ scopes     = ["registry:read", "versions:publish", "runs:preview", "stores:read"
   deploys and pulls versions of its app and reads their sandbox stores (`--version <hash>`); it cannot promote,
   approve, rollback or administer, reach live data or live runs, or touch another app, whatever its human may do. It
   does not refresh: when the cli says the session expired, call `login` again.
-- A **human** session (`cori login <url>` in the folder: browser + PKCE, `--device` without a browser, `--token` as
-  given for dev or CI): refreshes itself; carries approve and promote.
+- A **human** login (`cori login <url>`: browser + PKCE, `--device` without a browser, `--token` as given for dev or
+  CI) is kept in `~/.cori/config.toml`, one per server, and refreshes itself there; it carries approve and promote. In
+  an app folder it also makes the folder work with that server (`--global`: your login only). `cori init` and
+  `cori pull` write the session of the server they used: with your login, the folder holds no token of its own.
 - Dev mode (`cori up`): tokens look like `dev:<sub>:<role,role>`; with no session every command uses `dev:<you>:it_admin`.
 - `.cori/` is ignored by git and skipped by `deploy`; the token never enters a commit or a bundle. Never print it.
 - Credential files (`.env`, `.env.*`, `.npmrc`, `.netrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`) never enter a bundle:

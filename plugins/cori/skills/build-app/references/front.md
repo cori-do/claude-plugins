@@ -1,8 +1,12 @@
 # The front
 
-Cori serves `dist/` at `/apps/<app>/` (the promoted version) and `/apps/<app>/@<hash>/` (a deployed version's
-preview, whose calls go to that version's workflows and sandbox stores). The front authenticates with the org SSO in
-production and with `dev:<sub>:<roles>` under `cori up`; `[front].allow.roles` in `cori.toml` says who may load it.
+On a server with a fronts domain (`CORI_FRONTS_URL`), Cori serves `dist/` at the root of the app's own host (the
+promoted version: `https://<app>.apps.example.com/`, on Cori Cloud `https://<app>--<org>.cori.run/`) and each deployed
+release at the root of a host of its own, `<app>--v<n>…` (its calls go to that release's workflows and sandbox stores).
+Without one, as under `cori up`, the same build is served at `/apps/<app>/` and `/apps/<app>/@v<n>/`. The front signs in
+with the org SSO on its live host, through the console on a release's host (nothing to register at the identity
+provider), and with `dev:<sub>:<roles>` under `cori up`; `[front].allow.roles` in `cori.toml` says who may load it.
+The organization's apps portal links each app's live host.
 
 ## The default: Vite + React + TypeScript + Tailwind in `front/`
 
@@ -58,7 +62,7 @@ const server = process.env.CORI_SERVER ?? "http://127.0.0.1:8080";
 const vendor = (f: string) => fileURLToPath(new URL(`./vendor/cori-client/${f}`, import.meta.url));
 
 export default defineConfig({
-  base: "./",                                   // the same build serves /apps/<app>/ and every /apps/<app>/@<hash>/ preview
+  base: "./",                                   // the same build serves a host's root, /apps/<app>/ and every release
   plugins: [react(), tailwindcss()],
   resolve: { alias: [
     { find: /^@cori-do\/client\/react$/, replacement: vendor("react.ts") },
@@ -78,9 +82,12 @@ export default defineConfig({
 
 ### Rules that bite
 
-- **`base: "./"` and hash routing.** The server falls back to `index.html` for unknown paths, so a
-  `BrowserRouter` path like `/apps/x/tickets/42` loads `./assets/…` relative to `tickets/` and gets HTML back. Route
-  on `location.hash` (`#/tickets/42`, a `hashchange` listener, or `createHashRouter`); never use absolute `/assets`.
+- **`base: "./"` and hash routing.** The server falls back to `index.html` for unknown paths, and `cori up` serves the
+  front under `/apps/<app>/`, so a `BrowserRouter` path like `/apps/x/tickets/42` loads `./assets/…` relative to
+  `tickets/` and gets HTML back. Route on `location.hash` (`#/tickets/42`, a `hashchange` listener, or
+  `createHashRouter`); never use absolute `/assets`.
+- **The platform's paths.** On the front's host, `/v1/…` is the API, `/__cori/…` the platform's (`config.json`, the
+  sign-in) and `/apps/…` older links, which move to the root: no file or route of the front lives there.
 - **`dist/` is build output** (ignored by git): run `npm run build` in `front/` before every `cori deploy`, since the
   bundle takes `dist/` from the working tree. `cori deploy` warns when `dist/` is missing or older than `front/` or
   `workflows/`.
@@ -110,6 +117,10 @@ export default defineConfig({
 - **Looks like a product:** a consistent layout (header, nav, max-width content), a spacing and type scale, cards and
   tables with aligned numbers, status badges with color and text, `lucide-react` icons, responsive down to phone
   width, visible focus states and labelled inputs. No lorem ipsum, no default Vite page, no unstyled HTML controls.
+- **A place on the apps portal:** `[app] name` and `description` in cori.toml (one line, at most 140 characters:
+  `cori check` warns past that), and an icon, `favicon.svg` (or `.png`, `.ico`, at most 256 KiB) at the root of `dist/`
+  (Vite: `front/public/favicon.svg`). The portal lists the app with them, its initial standing in for a missing icon.
+  When `cfg.portal_url` is set, the header links back to it ("All apps", as the template's does).
 - **Verified in a browser:** open the preview url (or `npm run dev` against `cori up`), run each workflow as each
   role, and look at it before reporting.
 
@@ -121,7 +132,7 @@ For a smoke test or a user who asked for no build step. The template's `dist/ind
 ```html
 <script type="module">
   const base = (location.pathname.match(/^\/apps\/[^/]+\/(@[^/]+\/)?/) || ["/"])[0];   // hosted under /apps/<app>/ or at a domain root
-  const cfg = await (await fetch(`${base}__cori/config.json`)).json();       // { app, baseUrl, auth, version, preview, dev }
+  const cfg = await (await fetch(`${base}__cori/config.json`)).json();       // { app, baseUrl, auth, version, preview, release, portal_url, dev }
   const token = () => localStorage.getItem(`cori.tok.${cfg.app}`) || "dev:alice:support_agent";   // the dev widget's identity for this app; production: the SSO JWT
   const wf = cfg.preview && cfg.version
     ? `${cfg.baseUrl}/v1/apps/${cfg.app}/versions/${cfg.version}/wf/support_ticket_triage/runs`   // a preview runs its own version
@@ -181,11 +192,13 @@ GET  /v1/apps/{app}/runs/{run_id}/stream                 progress as server-sent
 POST /v1/apps/{app}/runs/{run_id}/decisions/{step}       answer a `human` step (body: the decision value)
 GET  /v1/apps/{app}/approvals                            pending approvals for the caller's roles
 POST /v1/apps/{app}/approvals/{id}                       decide one (body: the decision value)
-GET  /apps/{app}/__cori/config.json                      the front's config (app, baseUrl, auth, version, preview, dev)
-GET  /apps/{app}/callback                                the sign-in redirect back into the front
-GET  /apps/{app}/__cori/dev-widget.js                    the dev widget, under `cori up` only
+GET  /__cori/config.json                                 the front's config (app, baseUrl, auth, version, preview, release, portal_url, dev)
+GET  /apps/{app}/callback                                the sign-in redirect back into the front (the path its identity provider knows)
+GET  /__cori/dev-widget.js                               the dev widget, under `cori up` only
 ```
-A deployed version's preview serves the front and its `__cori/` files under `/apps/{app}/@{hash}/`.
+These are the paths on the front's own host. Without a fronts domain (`cori up`) the front's files are under
+`/apps/{app}/` (`/apps/{app}/__cori/config.json`), and a release's under `/apps/{app}/@v<n>/`; on its own host a release
+serves the same paths at its root.
 `GET /v1/apps/{app}/client.ts` is for build time, not for the running front: `cori gen client --app <id>` fetches it
 with a builder's session.
 
